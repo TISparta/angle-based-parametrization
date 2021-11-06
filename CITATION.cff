@@ -2,17 +2,14 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: >-
-  Angle-based Parametrization with
-  EvolutionaryOptimization for OESCL-band 3-dB
-  splitters
+title: Angle-based Parametrization with EvolutionaryOptimization for OESCL-band 3-dB splitters
 message: Optimization codes used in Lumerical
 type: software
 authors:
   - name-particle: Roy
     family-names: Prosopio-Galarza
     email: rprosopiog@uni.pe
-    affiliation: National   University of  Engineering
+    affiliation: National University of Engineering
   - name-particle: J. Leonidas
     family-names: Garcia-Gonzales
     email: jose.garcia@utec.edu.pe
