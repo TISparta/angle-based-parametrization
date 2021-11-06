@@ -1,0 +1,78 @@
+#  Set the 'debug_output' variable to 1 to save debuggin information
+#  to a text file.  The 'debug' command may also be helpful.
+# 
+#  Quantities defined in script workspace:
+#  Ng      - Maximum generations (single value)
+#  Nm      - Generation size (single value)
+#  Np      - Number of parameters (single value)
+#  pRange  - Parameter ranges (matrix: Np x 2)
+#  pValues - Parameter values  for first generation.  Initially
+#            set to random values within parameter range. (matrix: Np x Nm)
+#            The purpose of this script is to set this matrix, if desired.
+
+# CMA-ES algorithm initialization
+n = Np;
+sigma = (max(pRange(1, 1:2)) - min(pRange(1, 1:2))) / 2;
+for (i = 1:n) {
+    sigma_tmp = (max(pRange(i, 1:2)) - min(pRange(i, 1:2))) / 2;
+    if (sigma_tmp < sigma) {
+        sigma = sigma_tmp;
+    }
+}
+# 2 <= Nm and recommended value is 4 + int(3 * log(n))
+m = Nm - 1;
+m_elite = floor(m / 2.0);
+if (m_elite == 0) {
+    m_elite = 1;
+}
+
+# Define and normilize ws
+ws = zeros(m);
+for (i = 1:m_elite) {
+    ws(i) = log((m + 1) / 2.0) - log(i);
+}
+ws_norm = norm(ws);
+sq_sum = 0.0;
+for (i = 1:m) {
+    ws(i) = ws(i) / ws_norm;
+    sq_sum = sq_sum + ws(i) * ws(i);
+}
+
+# Define other parameters
+mu_eff = 1.0 / sq_sum;
+c_sigma = (mu_eff + 2.0) / (n + mu_eff + 5.0);
+d_sigma_part = 0;
+if (mu_eff >= 1) {
+    tmp = sqrt((mu_eff - 1.0) / (n + 1.0)) - 1.0;
+    if (tmp > 0) {
+      d_sigma_part = tmp;
+    }
+}
+d_sigma = 1.0 + c_sigma + 2.0 * d_sigma_part;
+c_SIGMA = (4.0 + mu_eff / n) / (n + 4.0 + 2.0 * mu_eff / n);
+c_1 = 2.0 / ((n + 1.3) * (n + 1.3) + mu_eff);
+c_mu_op1 = 1.0 - c_1;
+c_mu_op2 = 2.0 * (mu_eff - 2.0 + 1.0 / mu_eff) / ((n + 2.0) * (n + 2.0) + mu_eff);
+c_mu = c_mu_op1;
+if (c_mu_op2 < c_mu_op1) {
+    c_mu = c_mu_op2;
+}
+E = (n ^ 0.5) * (1.0 - 1.0 / (4.0 * n) + 1.0 / (21.0 * n * n));
+p_sigma = zeros(n);
+p_SIGMA = zeros(n);
+SIGMA = matrix(n, n);
+for (i = 1:n) {
+    SIGMA(i, i) = 1;
+}
+EPS = 1e-14;
+MAX_SIGMA = 1e9;
+
+# turn on debugging to write script information to file
+debug_output = 1;
+if (debug_output) {
+    ?workspace;
+    write("first-generation.txt","-- in First generation script --");
+    write("first-generation.txt", "initial parameter values");
+    write("first-generation.txt", num2str(pRange));
+    write("first-generation.txt", "-- done First generation script --");
+}

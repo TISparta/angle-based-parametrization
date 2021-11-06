@@ -1,0 +1,175 @@
+#  This script is used to calculate the parameter values for the next generation, 
+#  based on results from previous generations.  
+# 
+#
+#  Quantities defined in script workspace:
+#  Cg         - Current generation (single value)
+#  Ng         - Maximum generations (single value)
+#  Nm         - Generation size (single value)
+#  Np         - Number of parameters (single value)
+#  pRange     - Parameter ranges (matrix: Np x 2)
+#  pValues    - Parameter values for next generation. (matrix: Np x Nm)
+#  fomHistory - Figure of merit history (maxtrix: Nm x Ng-1)
+#  pHistory   - Parameter value history (maxtrix: Np x Nm x Ng-1)
+
+if (debug_output) {
+  ?workspace;
+  write("next-generation.txt", "-- in Next generation script --");
+  write("next-generation.txt", "Generation");
+  write("next-generation.txt", num2str(Cg));
+}
+
+# EVALUATE
+mu = pinch(pHistory(1:n, m + 1, Cg));
+if (debug_output) {
+  write("next-generation.txt", "mu");
+  write("next-generation.txt", num2str(mu));
+  write("next-generation.txt", "f(mu)");
+  write("next-generation.txt", num2str(fomHistory(m + 1, Cg)));
+}
+iys = zeros(m);
+for (x = 1:m) {
+    iys(x) = x;
+}
+for (x = 1:m) {
+    for (y = x:m) {
+        y_px = -fomHistory(iys(x), Cg);
+        y_py = -fomHistory(iys(y), Cg);
+        if (y_px > y_py) {
+            tmp = iys(x);
+            iys(x) = iys(y);
+            iys(y) = tmp;
+        }
+    }
+}
+
+# UPDATE
+
+# Selection and mean update
+sigma_s = matrix(m, n);
+for (point = 1:m) {
+    x = pinch(pHistory(1:n, point, Cg));
+    for (parameter = 1:n) {
+        sigma_s(point, parameter) = (x(parameter) - mu(parameter)) / sigma;
+    }
+}
+sigma_w = zeros(n);
+for (point = 1:m_elite) {
+    for (parameter = 1:n) {
+        sigma_w(parameter) = sigma_w(parameter) + ws(point) * sigma_s(iys(point), parameter);
+    }
+}
+for (parameter = 1:n) {
+    mu(parameter) = mu(parameter) + sigma * sigma_w(parameter);
+}
+
+# Step-size control
+M = svd(SIGMA);
+S = M{2};
+for (i = 1:n) {
+    S(i, i) = 1 / sqrt(S(i, i));
+}
+C = mult(M{1}, S, M{3});
+
+for (i = 1:n) {
+    dproduct = 0.0;
+    for (j = 1:n) {
+        dproduct = dproduct + C(i, j) * sigma_w(j);
+    }
+    p_sigma(i) = (1.0 - c_sigma) * p_sigma(i) + dproduct * sqrt(c_sigma * (2.0 - c_sigma) * mu_eff);
+}
+
+exponent = (c_sigma / d_sigma) * (norm(p_sigma) / E - 1);
+sigma = sigma * exp(exponent);
+if (sigma > MAX_SIGMA) {
+    sigma = MAX_SIGMA;
+}
+
+# Covariance matrix adaptation
+val_1 = norm(p_sigma) / sqrt(1.0 - (1.0 - c_sigma) ^ (2 * Cg));
+val_2 = (1.4 + 2.0 / (n + 1)) * E;
+h_sigma = 0;
+if (val_1 < val_2) {
+  h_sigma = 1;
+}
+p_SIGMA_part = h_sigma * sqrt(c_SIGMA * (2.0 - c_SIGMA) * mu_eff);
+for (parameter = 1:n) {
+  p_SIGMA(parameter) = (1.0 - c_SIGMA) * p_SIGMA(parameter) + p_SIGMA_part * sigma_w(parameter);
+}
+w_theta = zeros(m);
+for (i = 1:m) {
+    if (ws(i) >= 0) {
+        w_theta(i) = ws(i);
+    } else {
+        row = zeros(n);
+        for (x = 1:n) {
+            for (y = 1:n) {
+                row(x) = row(x) + C(x, y) * sigma_s(iys(i), y);
+            }
+        }
+        w_theta(i) = n * ws(i) / (norm(row) ^ 2);
+    }
+}
+SIGMA_part_1 = matrix(n, n);
+for (i = 1:n) {
+    for (j = 1:n) {
+        SIGMA_part_1(i, j) = (1.0 - c_1 - c_mu) * SIGMA(i, j);
+    }
+}
+SIGMA_part_2 = matrix(n, n);
+for (i = 1:n) {
+    for (j = 1:n) {
+        SIGMA_part_2(i, j) = p_SIGMA(i) * p_SIGMA(j);
+        SIGMA_part_2(i, j) = SIGMA_part_2(i, j) + (1.0 - h_sigma) *  c_SIGMA * (2.0 - c_SIGMA) * SIGMA(i, j);
+        SIGMA_part_2(i, j) = SIGMA_part_2(i, j) * c_1;
+    }
+}
+SIGMA_part_3 = matrix(n, n);
+for (i = 1:m) {
+    for (x = 1:n) {
+        for (y = 1:n) {
+            SIGMA_part_3(x, y) = SIGMA_part_3(x, y) + w_theta(i) * sigma_s(iys(i), x) * sigma_s(iys(i), y);
+        }
+    }
+}
+for (x = 1:n) {
+    for (y = 1:n) {
+        SIGMA_part_3(x, y) = SIGMA_part_3(x, y) * c_mu;
+        SIGMA(x, y) = SIGMA_part_1(x, y) + SIGMA_part_2(x, y) + SIGMA_part_3(x, y);
+    }
+}
+for (x = 1:n) {
+    for (y = 1:x) {
+        SIGMA(x, y) = SIGMA(y, x);
+    }
+}
+
+# ASK
+K = sigma * sigma * SIGMA;
+M = svd(K);
+S = M{2};
+for (i = 1:n) {
+    S(i, i) = sqrt(S(i, i));
+}
+K_sq = mult(M{1}, S, M{3});
+for (point = 1:m) {
+    u = zeros(n);
+    for (parameter = 1:n) {
+      u(parameter) = randn(0, 1);
+    }
+    d = mult(K_sq, u);
+    x = mu + d;
+    for (parameter = 1:n) {
+        pValues(parameter, point) = x(parameter);
+    }
+    if (pValues(parameter, point) > max(pRange(parameter, 1:2))) {
+        pValues(parameter, point) = max(pRange(parameter, 1:2)); 
+    }
+    if (pValues(parameter, point) < min(pRange(parameter, 1:2))) {
+        pValues(parameter, point) = min(pRange(parameter, 1:2)); 
+    }
+}
+
+for (parameter = 1:n) {
+  pValues(parameter, m + 1) = mu(parameter);
+}

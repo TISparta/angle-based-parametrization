@@ -1,0 +1,30 @@
+#  Set the 'debug_output' variable to 1 to save debuggin information
+#  to a text file.  The 'debug' command may also be helpful.
+# 
+#  Quantities defined in script workspace:
+#  Ng      - Maximum generations (single value)
+#  Nm      - Generation size (single value)
+#  Np      - Number of parameters (single value)
+#  pRange  - Parameter ranges (matrix: Np x 2)
+#  pValues - Parameter values  for first generation.  Initially
+#            set to random values within parameter range. (matrix: Np x Nm)
+#            The purpose of this script is to set this matrix, if desired.
+
+# Firefly algorithm initialization
+INF = 1e9;
+n = Np;
+m = Nm;
+n_parents = 10;
+alpha = 1;
+
+# turn on debugging to write script information to file
+debug_output = 1;
+if (debug_output) {
+  del("first-generation.txt");
+  del("next-generation.txt");
+  write("first-generation.txt","-- in First generation script --");
+  ?workspace;
+  write("first-generation.txt", "initial parameter values");
+  write("first-generation.txt", num2str(pRange));
+  write("first-generation.txt", "-- done First generation script --");
+}

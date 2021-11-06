@@ -1,0 +1,93 @@
+#  This script is used to calculate the parameter values for the next generation, 
+#  based on results from previous generations.  
+# 
+#
+#  Quantities defined in script workspace:
+#  Cg         - Current generation (single value)
+#  Ng         - Maximum generations (single value)
+#  Nm         - Generation size (single value)
+#  Np         - Number of parameters (single value)
+#  pRange     - Parameter ranges (matrix: Np x 2)
+#  pValues    - Parameter values for next generation. (matrix: Np x Nm)
+#  fomHistory - Figure of merit history (maxtrix: Nm x Ng-1)
+#  pHistory   - Parameter value history (maxtrix: Np x Nm x Ng-1)
+
+if (debug_output) {
+  ?"-- in Next generation script --";
+  ?workspace;
+  write("next-generation.txt", "-- in Next generation script --");
+  write("next-generation.txt", "Generation");
+  write("next-generation.txt", num2str(Cg));
+}
+
+# Selection: Roulette selection
+value = matrix(m);
+parent = matrix(n_parents);
+
+min_fitness = fomHistory(1, Cg);
+value(1) = fomHistory(1, Cg);
+for (i = 2:m) {
+  current_fitness = fomHistory(i, Cg);
+  value(i) = current_fitness;
+  if (current_fitness < min_fitness) {
+    min_fitness = current_fitness;
+  }
+}
+sum_values = 0;
+for (i = 1:m) {
+  value(i) = value(i) - min_fitness;
+  sum_values = sum_values + value(i);
+}
+if (abs(sum_values) < 1e-7) {
+  sum_values = 1.0;
+}
+for (i = 1:m) {
+  value(i) = value(i) / sum_values;
+}
+
+for (p = 1:n_parents) {
+  u = rand();
+  choose = rand(1, m, 2);
+  l = 0;
+  for (i = 1:m) {
+    if ((l <= u) & (u <= l + value(i))) {
+      choose = i;
+    }
+    l = l + value(i);
+  }
+  write("next-generation.txt", num2str(choose));
+  parent(p) = choose;
+}
+
+# Crossover: Uniform crossover
+cur = 1;
+for (i = 1:m) {
+  x1 = pinch(pHistory(1:n, parent(cur), Cg));
+  cur = cur + 1;
+  if (cur == n_parents + 1) {
+    cur = 1;
+  }
+  x2 = pinch(pHistory(1:n, parent(cur), Cg));
+  for (parameter = 1:n) {
+    u = rand(0, 1, 2);
+    write("next-generation.txt", num2str(u));
+    if (u == 0) {
+      pValues(parameter, i) = x1(parameter);
+    } else {
+      pValues(parameter, i) = x2(parameter);
+    }
+  }
+}
+
+# Mutation
+for (i = 1:m) {
+  for (parameter = 1:n) {
+    pValues(parameter, i) = pValues(parameter, i) + alpha * rand(-3, 3);
+    if (pValues(parameter, i) > max(pRange(parameter, 1:2))) {
+      pValues(parameter, i) = max(pRange(parameter, 1:2));
+    }
+    if (pValues(parameter, i) < min(pRange(parameter, 1:2))) {
+      pValues(parameter, i) = min(pRange(parameter, 1:2));
+    }
+  }
+}
