@@ -12,13 +12,8 @@
 
 # CMA-ES algorithm initialization
 n = Np;
-sigma = (max(pRange(1, 1:2)) - min(pRange(1, 1:2))) / 2;
-for (i = 1:n) {
-    sigma_tmp = (max(pRange(i, 1:2)) - min(pRange(i, 1:2))) / 2;
-    if (sigma_tmp < sigma) {
-        sigma = sigma_tmp;
-    }
-}
+sigma = 0.3;
+
 # 2 <= Nm and recommended value is 4 + int(3 * log(n))
 m = Nm - 1;
 m_elite = floor(m / 2.0);
@@ -75,4 +70,9 @@ if (debug_output) {
     write("first-generation.txt", "initial parameter values");
     write("first-generation.txt", num2str(pRange));
     write("first-generation.txt", "-- done First generation script --");
+    write("first-generation.txt", num2str(n));
+    write("first-generation.txt", num2str(m));
+    write("first-generation.txt", num2str(sigma));
+    write("first-generation.txt", num2str(d_sigma));
+    write("next-generation.txt", num2str(c_sigma));
 }

@@ -12,13 +12,6 @@
 #  fomHistory - Figure of merit history (maxtrix: Nm x Ng-1)
 #  pHistory   - Parameter value history (maxtrix: Np x Nm x Ng-1)
 
-if (debug_output) {
-  ?workspace;
-  write("next-generation.txt", "-- in Next generation script --");
-  write("next-generation.txt", "Generation");
-  write("next-generation.txt", num2str(Cg));
-}
-
 # EVALUATE
 mu = pinch(pHistory(1:n, m + 1, Cg));
 if (debug_output) {
@@ -67,7 +60,9 @@ for (parameter = 1:n) {
 M = svd(SIGMA);
 S = M{2};
 for (i = 1:n) {
-    S(i, i) = 1 / sqrt(S(i, i));
+    z = sqrt(S(i, i));
+    if (z < 1e-4) z = 1;
+    S(i, i) = 1 / z;
 }
 C = mult(M{1}, S, M{3});
 
@@ -80,6 +75,9 @@ for (i = 1:n) {
 }
 
 exponent = (c_sigma / d_sigma) * (norm(p_sigma) / E - 1);
+if(exponent>4){
+    exponent=4;
+}
 sigma = sigma * exp(exponent);
 if (sigma > MAX_SIGMA) {
     sigma = MAX_SIGMA;
@@ -107,7 +105,9 @@ for (i = 1:m) {
                 row(x) = row(x) + C(x, y) * sigma_s(iys(i), y);
             }
         }
-        w_theta(i) = n * ws(i) / (norm(row) ^ 2);
+        z = norm(row) ^ 2
+        if (z < 1e-4) z = 1;
+        w_theta(i) = n * ws(i) / z;
     }
 }
 SIGMA_part_1 = matrix(n, n);
@@ -146,6 +146,12 @@ for (x = 1:n) {
 
 # ASK
 K = sigma * sigma * SIGMA;
+if (debug_output) {
+  write("next-generation.txt", "-- in Next generation script before computing K --");
+  write("next-generation.txt", num2str(sigma));
+  write("next-generation.txt", num2str(SIGMA));
+  write("next-generation.txt", num2str(K));
+}
 M = svd(K);
 S = M{2};
 for (i = 1:n) {
