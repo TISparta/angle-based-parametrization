@@ -12,7 +12,7 @@
 
 # CMA-ES algorithm initialization
 n = Np;
-sigma = 0.3;
+sigma = 0.5;
 
 # 2 <= Nm and recommended value is 4 + int(3 * log(n))
 m = Nm - 1;
