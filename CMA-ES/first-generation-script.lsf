@@ -24,7 +24,7 @@ if (m_elite == 0) {
 
 # mu
 for (i = 1:n) {
-  pValues(i, m + 1) = (pRange(i, 2) - pRange(i, 1)) / 2.0;
+  pValues(i, m + 1) = (pRange(i, 2) + pRange(i, 1)) / 2.0;
 }
 
 # Define and normilize ws
@@ -32,8 +32,7 @@ ws = zeros(m);
 for (i = 1:m_elite) {
     ws(i) = log((m + 1) / 2.0) - log(i);
 }
-ws_norm = norm(ws);
-ws_sum = 0.0
+ws_sum = 0.0;
 for (i = 1:m) {
     ws_sum = ws_sum + ws(i);
 }

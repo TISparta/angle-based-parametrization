@@ -26,8 +26,8 @@ for (x = 1:m) {
 }
 for (x = 1:m) {
     for (y = x:m) {
-        y_px = -fomHistory(iys(x), Cg);
-        y_py = -fomHistory(iys(y), Cg);
+        y_px = fomHistory(iys(x), Cg);
+        y_py = fomHistory(iys(y), Cg);
         if (y_px > y_py) {
             tmp = iys(x);
             iys(x) = iys(y);
@@ -105,8 +105,8 @@ for (i = 1:m) {
                 row(x) = row(x) + C(x, y) * sigma_s(iys(i), y);
             }
         }
-        z = norm(row) ^ 2
-        if (z < 1e-4) z = 1;
+        z = norm(row) ^ 2;
+        #if (z < 1e-4) { z = 1; }
         w_theta(i) = n * ws(i) / z;
     }
 }
