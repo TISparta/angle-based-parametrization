@@ -61,9 +61,6 @@ M = svd(SIGMA);
 S = M{2};
 for (i = 1:n) {
     z = sqrt(S(i, i));
-    if (z < 1e-9) {
-      z = 1e-7;
-    }
     S(i, i) = 1 / z;
 }
 C = mult(M{1}, S, M{3});
